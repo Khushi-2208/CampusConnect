@@ -1,0 +1,14 @@
+{
+  "prisma.schemaPath": "prisma/schema.prisma",
+  "prisma.schemaPaths": [
+    "prisma/schema.prisma"
+  ],
+  "files.exclude": {
+    "**/node_modules/.prisma": true,
+    ".env.prisma": true,
+    "**/.env.prisma": true
+  },
+  "search.exclude": {
+    "**/node_modules/.prisma": true
+  }
+}

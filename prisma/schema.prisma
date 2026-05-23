@@ -1,0 +1,127 @@
+// Prisma schema for CampusConnect - College Event Management Platform
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+// Role enum for user roles
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+// Core user model with NextAuth support
+model User {
+  id                    Int                   @id @default(autoincrement())
+  email                 String                @unique
+  passwordHash          String?               @map("password_hash") // Optional for OAuth users
+  name                  String
+  emailVerified         DateTime?             @map("email_verified")
+  image                 String?
+  role                  UserRole              @default(STUDENT)
+  department            String?
+  
+  // User preferences
+  emailNotifications    Boolean               @default(true) @map("email_notifications")
+  pushNotifications     Boolean               @default(false) @map("push_notifications")
+  
+  createdAt             DateTime              @default(now()) @map("created_at")
+  updatedAt             DateTime              @updatedAt @map("updated_at")
+  
+  // NextAuth relations
+  accounts              Account[]
+  sessions              Session[]
+  
+  // Event relations
+  eventsCreated         Event[]
+  eventRegistrations    EventRegistration[]
+
+  @@map("users")
+}
+
+// NextAuth Account model (OAuth)
+model Account {
+  id                 String  @id @default(cuid())
+  userId             Int     @map("user_id")
+  type               String
+  provider           String
+  providerAccountId  String  @map("provider_account_id")
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// NextAuth Session model
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       Int      @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// NextAuth Verification Token
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// Event model for CampusConnect
+model Event {
+  id              Int                   @id @default(autoincrement())
+  title           String
+  description     String                @db.Text
+  date            DateTime
+  venue           String
+  bannerImage     String?               @map("banner_image") // URL or path to event image
+  capacity        Int                   @default(100)
+  registrationCount Int                 @default(0) @map("registration_count")
+  createdBy       Int                   @map("created_by")
+  creator         User                  @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  
+  // Event relations
+  registrations   EventRegistration[]
+  
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  @@index([createdBy])
+  @@map("events")
+}
+
+// Event registration model to track student registrations
+model EventRegistration {
+  id              Int                   @id @default(autoincrement())
+  eventId         Int                   @map("event_id")
+  event           Event                 @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId          Int                   @map("user_id")
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  registeredAt    DateTime              @default(now()) @map("registered_at")
+
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@index([eventId])
+  @@map("event_registrations")
+}
