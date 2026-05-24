@@ -1,4 +1,4 @@
-# Next.js SaaS Starter
+# Campus Connect
 
 A production-ready, minimal SaaS boilerplate built with Next.js 14, TypeScript, Prisma, and Tailwind CSS.
 
